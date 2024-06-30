@@ -1,7 +1,6 @@
-import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
-import axios from "axios";
+import express from "express";
 
 dotenv.config();
 
