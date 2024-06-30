@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
 // Webhook endpoint
-app.post("/webhook", async (req: Request, res: Response) => {
+app.post("/webhook", async (req, res) => {
   try {
     const paymentData = req.body;
 
@@ -32,11 +32,11 @@ app.post("/webhook", async (req: Request, res: Response) => {
   }
 });
 
-const processPaymentData = (data: any) => {
+const processPaymentData = (data) => {
   // TODO: process payment VAT
 };
 
-const sendToPaymentService = async (data: any) => {
+const sendToPaymentService = async (data) => {
   //   const paymentServiceUrl = process.env.PAYMENT_SERVICE_API_URL;
   //   const apiKey = process.env.API_KEY;
   //   try {
