@@ -13,21 +13,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Webhook endpoint
 app.post("/webhook", async (req, res) => {
-  console.log(req);
-
+  console.log("recieved data:");
   console.log(req.body);
-  console.log(req.params);
-
-  // // const webhookData = {};
-
-  // // const params = req.params.split("&");
-
-  // // params.forEach((param) => {
-  // //   const [key, value] = param.split("=");
-  // //   webhookData[key] = value;
-  // // });
-  // // console.log("webhook data");
-  // console.log(webhookData);
 
   try {
     // const transformedData = processPaymentData(webhookData);
