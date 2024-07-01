@@ -1,7 +1,6 @@
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import express from "express";
-import { conversionMap } from "./vatConversionMap";
 dotenv.config();
 
 const app = express();
@@ -10,6 +9,10 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON bodies
 // app.use(bodyParser.json({}));
 app.use(bodyParser.urlencoded({ extended: true }));
+
+const conversionMap = new Map();
+
+conversionMap.set("1", 50);
 
 // Webhook endpoint
 app.post("/webhook", async (req, res) => {
