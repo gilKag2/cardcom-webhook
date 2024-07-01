@@ -13,6 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const conversionMap = new Map();
 
 conversionMap.set("1", 50);
+conversionMap.set("2", 50);
 
 // Webhook endpoint
 app.post("/webhook", async (req, res) => {
@@ -33,7 +34,7 @@ app.post("/webhook", async (req, res) => {
 
 const processData = (data) => {
   console.log(`processing data for item ${data["ProdItemID"]}`);
-  const priceWithoutVat = conversionMap(data["ProdItemID"]); // maps product name to vat pricing information
+  const priceWithoutVat = conversionMap.get(data["ProdItemID"]); // maps product name to vat pricing information
   if (!visaPrice) {
     return;
   }
