@@ -1,7 +1,7 @@
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import express from "express";
-
+import { conversionMap } from "./vatConversionMap";
 dotenv.config();
 
 const app = express();
@@ -17,6 +17,7 @@ app.post("/webhook", async (req, res) => {
   console.log(req.body);
 
   try {
+    processData(req.body);
     // const transformedData = processPaymentData(webhookData);
     // await createInvoice(webhookData);
 
@@ -27,9 +28,15 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-const processPaymentData = (data) => {
-  console.log("item ", data["ProdItemID"]);
-  // const vatData = visaVatConversionMap(data.ProdName); // maps product name to vat pricing information
+const processData = (data) => {
+  console.log(`processing data for item ${data["ProdItemID"]}`);
+  const priceWithoutVat = conversionMap(data["ProdItemID"]); // maps product name to vat pricing information
+  if (!visaPrice) {
+    return;
+  }
+  const priceWithVat = +data["ProdPrice"] - priceWithoutVat;
+  console.log("prices:");
+  console.log(priceWithVat, priceWithoutVat);
   // TODO: process payment VAT
 };
 
