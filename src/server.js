@@ -35,7 +35,7 @@ app.post("/webhook", async (req, res) => {
 const processData = (data) => {
   console.log(`processing data for item ${data["ProdItemID"]}`);
   const priceWithoutVat = conversionMap.get(data["ProdItemID"]); // maps product name to vat pricing information
-  if (!visaPrice) {
+  if (!priceWithoutVat) {
     return;
   }
   const priceWithVat = +data["ProdPrice"] - priceWithoutVat;
