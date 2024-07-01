@@ -8,26 +8,30 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware to parse JSON bodies
-app.use(bodyParser.json());
+// app.use(bodyParser.json({}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Webhook endpoint
 app.post("/webhook", async (req, res) => {
+  console.log(req);
+
+  console.log(req.body);
   console.log(req.params);
 
-  const webhookData = {};
+  // // const webhookData = {};
 
-  const params = req.params.split("&");
+  // // const params = req.params.split("&");
 
-  params.forEach((param) => {
-    const [key, value] = param.split("=");
-    webhookData[key] = value;
-  });
-  console.log("webhook data");
-  console.log(webhookData);
+  // // params.forEach((param) => {
+  // //   const [key, value] = param.split("=");
+  // //   webhookData[key] = value;
+  // // });
+  // // console.log("webhook data");
+  // console.log(webhookData);
 
   try {
     // const transformedData = processPaymentData(webhookData);
-    await createInvoice(transformedData);
+    // await createInvoice(webhookData);
 
     res.status(200).send("Webhook received and invoice created successfully");
   } catch (error) {
