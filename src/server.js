@@ -1,6 +1,7 @@
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import express from "express";
+import { visaVatConversionMap } from "./vatConversionMap";
 
 dotenv.config();
 
@@ -12,27 +13,57 @@ app.use(bodyParser.json());
 
 // Webhook endpoint
 app.post("/webhook", async (req, res) => {
+  console.log(req.params);
+
+  const webhookData = {};
+
+  const params = req.params.split("&");
+
+  params.forEach((param) => {
+    const [key, value] = param.split("=");
+    webhookData[key] = value;
+  });
+  console.log("webhook data");
+  console.log(webhookData);
+
   try {
-    const paymentData = req.body;
+    // const transformedData = processPaymentData(webhookData);
+    await createInvoice(transformedData);
 
-    // Log the incoming data for inspection
-    console.log("Received payment data:", paymentData);
-
-    // Process the payment data
-    const processedData = processPaymentData(paymentData);
-
-    // Send processed data to the original site's payment service API
-    await sendToPaymentService(processedData);
-
-    res.send("Webhook received and processed");
+    res.status(200).send("Webhook received and invoice created successfully");
   } catch (error) {
-    console.error("Error processing webhook:", error);
-    res.status(500).send("Error processing webhook");
+    console.error("Error handling webhook:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
 
 const processPaymentData = (data) => {
+  console.log("item ", data["ProdItemID"]);
+  // const vatData = visaVatConversionMap(data.ProdName); // maps product name to vat pricing information
   // TODO: process payment VAT
+};
+
+const createInvoice = async (invoiceData) => {
+  console.log("creating new invoice ");
+  const newInvoice = { terminalnumber: invoiceData["terminalnumber"] };
+  console.log(newInvoice);
+  // try {
+  //   const response = await axios.post("https://secure.cardcom.co.il/Interface/CreateInvoice.aspx", qs.stringify(invoiceData), {
+  //     headers: {
+  //       "Content-Type": "application/x-www-form-urlencoded",
+  //     },
+  //   });
+
+  //   const result = qs.parse(response.data);
+
+  //   if (result.ResponseCode === "0") {
+  //     console.log(`Invoice Number: ${result.InvoiceNumber} Invoice Type: ${result.InvoiceType}`);
+  //   } else {
+  //     console.error("Error:", result);
+  //   }
+  // } catch (error) {
+  //   console.error("Error:", error);
+  // }
 };
 
 const sendToPaymentService = async (data) => {
