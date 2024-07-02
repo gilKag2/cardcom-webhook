@@ -10,14 +10,12 @@ const PORT = process.env.PORT || 4000;
 app.use(bodyParser.json({}));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const conversionMap = new Map();
-
-conversionMap.set("1", 50);
-conversionMap.set("2", 50);
-
 app.post("/", async (req, res) => {
+  console.log("recieved data:");
+  console.log(req.body);
+
   try {
-    const newInvoiceData = processData(req.body);
+    const newInvoiceData = createNewInvoiceData(req.body);
     await createInvoice(newInvoiceData);
 
     res.status(200).send("Webhook received and invoice created successfully");
@@ -27,14 +25,21 @@ app.post("/", async (req, res) => {
   }
 });
 
-const processData = (data) => {
+const conversionMap = new Map();
+
+conversionMap.set("1", 50);
+conversionMap.set("2", 50);
+
+const createNewInvoiceData = (data) => {
   console.log(`processing data for item ${data["ProdItemID"]}`);
-  const commissionPrice = conversionMap.get(data["ProdItemID"]); // maps product name to vat pricing information
-  if (!commissionPrice) {
-    console.log("Product ID not found in conversion map.");
-    return;
-  }
+  const commissionPrice = conversionMap.get(data["ProdItemID"]) || 0; // maps product name to vat pricing information
+
   const productPrice = +data["ProdPrice"] - commissionPrice;
+
+  const invoiceLines = [{ Description: "Product", Price: productPrice.toFixed(2), Quantity: 1, IsVatFree: "true" }];
+  if (commissionPrice > 0) {
+    invoiceLines.push({ Description: "Comission", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "false" });
+  }
 
   // Create the new invoice
   const invoiceData = {
@@ -55,10 +60,7 @@ const processData = (data) => {
       Email: data["UserEmail"],
       SendByEmail: "true",
     },
-    InvoiceLines: [
-      { Description: "Product", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "true" },
-      { Description: "Comission", Price: productPrice.toFixed(2), Quantity: 1, IsVatFree: "false" },
-    ],
+    InvoiceLines: invoiceLines,
     "CreditDealNum.DealNumber": data["internaldealnumber"],
   };
 
@@ -90,15 +92,12 @@ function buildQueryString(data) {
 const createInvoice = async (invoiceData) => {
   const queryString = buildQueryString(invoiceData);
   const url = `https://secure.cardcom.co.il/Interface/CreateInvoice.aspx?${queryString}`;
-
-  console.log(url);
-
   try {
     const result = await axios.post(url);
-
     console.log(result);
   } catch (err) {
     console.log(err);
+    throw new Error("Failed to create invoice");
   }
 };
 
