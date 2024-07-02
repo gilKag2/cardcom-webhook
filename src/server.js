@@ -37,8 +37,8 @@ app.post("/", async (req, res) => {
 
 const conversionMap = new Map();
 
-conversionMap.set(1, 24);
-conversionMap.set(2, 24);
+conversionMap.set("1", 24);
+conversionMap.set("2", 24);
 
 const createNewInvoiceData = (data) => {
   if (!data["ProdItemID"] || !data["ProdPrice"]) {
@@ -52,7 +52,8 @@ const createNewInvoiceData = (data) => {
 
   if (conversionMap.has(data["ProdItemID"])) {
     console.log("adding splitted comission invoice");
-    const commissionPrice = conversionMap.get(data["ProdItemID"]);
+    const commissionPrice = conversionMap.get(data["ProdItemID"]); // TODO: should it be usd converted using exchange api?
+
     invoiceLines.push({ Description: "שירות", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "true" });
     productPrice -= commissionPrice;
     // productPrice += productPrice * 0.17;
