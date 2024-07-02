@@ -47,11 +47,11 @@ const createNewInvoiceData = (data) => {
 
   if (conversionMap.has(data["ProdItemID"])) {
     const commissionPrice = conversionMap.get(data["ProdItemID"]);
-    invoiceLines.push({ Description: "Comission", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "true" });
+    invoiceLines.push({ Description: "Comission", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "false" });
     productPrice -= commissionPrice;
   }
 
-  invoiceLines.push({ Description: "Product", Price: productPrice.toFixed(2), Quantity: 1, IsVatFree: "false" });
+  invoiceLines.push({ Description: "Product", Price: productPrice.toFixed(2), Quantity: 1, IsVatFree: "true" });
 
   // Create the new invoice
   const invoiceData = {
