@@ -14,6 +14,11 @@ app.post("/", async (req, res) => {
   console.log("recieved data:");
   console.log(req.body);
 
+  if (req.body.responsecode != 0) {
+    console.error("Received error response from payment gateway:", req.body.responsdescription);
+    return res.status(400).send({ message: "Payment failed in CardCom services" });
+  }
+
   let newInvoiceData;
   try {
     newInvoiceData = createNewInvoiceData(req.body);
@@ -22,7 +27,7 @@ app.post("/", async (req, res) => {
   }
   try {
     await createInvoice(newInvoiceData);
-
+    console.log("invoice createdd successfully");
     res.status(200).send("Webhook received and invoice created successfully");
   } catch (error) {
     console.error(error);
@@ -32,8 +37,8 @@ app.post("/", async (req, res) => {
 
 const conversionMap = new Map();
 
-conversionMap.set("1", 24);
-conversionMap.set("2", 24);
+conversionMap.set(1, 24);
+conversionMap.set(2, 24);
 
 const createNewInvoiceData = (data) => {
   if (!data["ProdItemID"] || !data["ProdPrice"]) {
@@ -46,12 +51,13 @@ const createNewInvoiceData = (data) => {
   const invoiceLines = [];
 
   if (conversionMap.has(data["ProdItemID"])) {
+    console.log("adding splitted comission invoice");
     const commissionPrice = conversionMap.get(data["ProdItemID"]);
-    invoiceLines.push({ Description: "Comission", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "false" });
+    invoiceLines.push({ Description: "שירות", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "true" });
     productPrice -= commissionPrice;
+    // productPrice += productPrice * 0.17;
   }
-
-  invoiceLines.push({ Description: "Product", Price: productPrice.toFixed(2), Quantity: 1, IsVatFree: "true" });
+  invoiceLines.push({ Description: "עלות הנפקה", Price: productPrice.toFixed(2), Quantity: 1, IsVatFree: "false" });
 
   // Create the new invoice
   const invoiceData = {
@@ -71,6 +77,7 @@ const createNewInvoiceData = (data) => {
       CoinID: "1",
       Email: data["UserEmail"],
       SendByEmail: "true",
+      ExtIsVatFree: "false",
     },
     InvoiceLines: invoiceLines,
     "CreditDealNum.DealNumber": data["internaldealnumber"],
@@ -85,8 +92,8 @@ const createInvoice = async (invoiceData) => {
   try {
     const result = await axios.post(url);
     const parsedData = parseResponseData(result.data);
-    const { ResponseCode, Description } = parsedData;
-    if (ResponseCode !== 0) {
+    console.log(parsedData);
+    if (parsedData["ResponseCode"] != 0) {
       console.log(result.data);
       throw new Error("Failed to create invoice");
     }
