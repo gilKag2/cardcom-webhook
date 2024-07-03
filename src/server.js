@@ -1,138 +1,61 @@
 import bodyParser from "body-parser";
-import dotenv from "dotenv";
 import express from "express";
 import axios from "axios";
+import dotenv from "dotenv";
+import fs from "fs";
+import { createNewInvoiceData } from "./invoice.js";
+import { loadCommissionRates } from "./commissionRates.js";
+import { buildQueryString, parseResponseData } from "./utils.js";
+
 dotenv.config();
 
 const app = express();
+
+const API_URL = process.env.CARDCOM_SERVICE_API_URL;
 const PORT = process.env.PORT || 4000;
 
 app.use(bodyParser.json({}));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.post("/", async (req, res) => {
-  console.log("recieved data:");
-  console.log(req.body);
+// Initial load of commission rates
+loadCommissionRates();
 
+app.post("/", async (req, res) => {
   if (req.body.responsecode != 0) {
     console.error("Received error response from payment gateway:", req.body.responsdescription);
     return res.status(400).send({ message: "Payment failed in CardCom services" });
   }
 
-  let newInvoiceData;
   try {
-    newInvoiceData = createNewInvoiceData(req.body);
-  } catch (err) {
-    return res.status(404).send({ message: err.message });
-  }
-  try {
-    await createInvoice(newInvoiceData);
-    console.log("invoice createdd successfully");
-    res.status(200).send("Webhook received and invoice created successfully");
+    const newInvoiceData = await createNewInvoiceData(req.body);
+    const errorData = await createInvoice(newInvoiceData);
+    if (!errorData) {
+      res.status(200).send("Webhook received and invoice created successfully");
+    } else {
+      return res.status(400).send({ message: errorData.message, errorCode: errorData.errorCode });
+    }
   } catch (error) {
-    console.error(error);
     res.status(500).send(error.message || "Internal Server Error");
   }
 });
 
-const conversionMap = new Map();
-
-conversionMap.set("1", 24);
-conversionMap.set("2", 24);
-
-const createNewInvoiceData = (data) => {
-  if (!data["ProdItemID"] || !data["ProdPrice"]) {
-    throw new Error("Invalid webhook data: missing 'ProdItemID' or 'ProdPrice'");
-  }
-  console.log(`processing data for item ${data["ProdItemID"]}`);
-
-  let productPrice = +data["ProdPrice"];
-
-  const invoiceLines = [];
-
-  if (conversionMap.has(data["ProdItemID"])) {
-    console.log("adding splitted comission invoice");
-    const commissionPrice = conversionMap.get(data["ProdItemID"]); // TODO: should it be usd converted using exchange api?
-
-    invoiceLines.push({ Description: "שירות", Price: commissionPrice.toFixed(2), Quantity: 1, IsVatFree: "true" });
-    productPrice -= commissionPrice;
-    // productPrice += productPrice * 0.17;
-  }
-  invoiceLines.push({ Description: "עלות הנפקה", Price: productPrice.toFixed(2), Quantity: 1, IsVatFree: "false" });
-
-  // Create the new invoice
-  const invoiceData = {
-    terminalnumber: data["terminalnumber"],
-    UserName: "kzFKfohEvL6AOF8aMEJz",
-    InvoiceType: "1",
-    InvoiceHead: {
-      CustName: data["CardOwnerName"],
-      CustAddresLine1: data["InvAddress"],
-      CustAddresLine2: data["InvAddress2"],
-      CustCity: data["intCity"],
-      CustLinePH: data["InvPhone"],
-      CustMobilePH: data["InvMobile"],
-      CompID: data["UID"],
-      Language: "he",
-      Comments: "Thanks for buying",
-      CoinID: "1",
-      Email: data["UserEmail"],
-      SendByEmail: "true",
-      ExtIsVatFree: "false",
-    },
-    InvoiceLines: invoiceLines,
-    "CreditDealNum.DealNumber": data["internaldealnumber"],
-  };
-
-  return invoiceData;
-};
-
 const createInvoice = async (invoiceData) => {
   const queryString = buildQueryString(invoiceData);
-  const url = `https://secure.cardcom.co.il/Interface/CreateInvoice.aspx?${queryString}`;
+  const url = `${API_URL}?${queryString}`;
   try {
     const result = await axios.post(url);
     const parsedData = parseResponseData(result.data);
     console.log(parsedData);
-    if (parsedData["ResponseCode"] != 0) {
-      console.log(result.data);
-      throw new Error("Failed to create invoice");
+    if (parsedData["ResponseCode"] == 0) {
+      // success
+      return;
     }
+
+    return { errorCode: parsedData["ResponseCode"], message: parsedData["Description"] };
   } catch (err) {
     console.log(err);
     throw new Error("Failed to contact card com services");
   }
-};
-
-const buildQueryString = (data) => {
-  const params = new URLSearchParams();
-
-  for (const key in data) {
-    if (typeof data[key] === "object" && !Array.isArray(data[key])) {
-      for (const subKey in data[key]) {
-        params.append(`${key}.${subKey}`, data[key][subKey]);
-      }
-    } else if (Array.isArray(data[key])) {
-      data[key].forEach((item, index) => {
-        for (const subKey in item) {
-          params.append(`${key}${index + 1}.${subKey}`, item[subKey]);
-        }
-      });
-    } else {
-      params.append(key, data[key]);
-    }
-  }
-
-  return params.toString();
-};
-
-const parseResponseData = (responseData) => {
-  const params = new URLSearchParams(responseData);
-  const parsedData = {};
-  for (const [key, value] of params) {
-    parsedData[key] = value;
-  }
-  return parsedData;
 };
 
 app.listen(PORT, () => {
