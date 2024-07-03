@@ -1,4 +1,25 @@
-import { getCommissionPrice } from "./commissionRates.js";
+import { getVisaIssuancePrice } from "./visaRatesLoader.js";
+
+const createServiceInvoiceLine = (visaPrice) => ({
+  Description: "שירות",
+  Price: visaPrice.toFixed(2),
+  Quantity: 1,
+  IsVatFree: "false",
+});
+
+const createIssuanceCostInvoiceLine = (productPrice) => ({
+  Description: "עלות הנפקה",
+  Price: productPrice.toFixed(2),
+  Quantity: 1,
+  IsVatFree: "true",
+});
+
+const createTotalCostInvoiceLine = (productPrice) => ({
+  Description: "מחיר כולל שירות",
+  Price: productPrice.toFixed(2),
+  Quantity: 1,
+  IsVatFree: "false",
+});
 
 export const createNewInvoiceData = async (data) => {
   if (!data["ProductID"] || !data["ProdPrice"]) {
@@ -10,27 +31,17 @@ export const createNewInvoiceData = async (data) => {
 
   const invoiceLines = [];
 
-  const commissionPriceNIS = getCommissionPrice(data["ProductID"]);
+  const visaPrice = getVisaIssuancePrice(data["ProductID"]);
 
-  if (commissionPriceNIS) {
-    console.log("Adding split commission invoice");
-
-    invoiceLines.push({
-      Description: "שירות",
-      Price: commissionPriceNIS.toFixed(2),
-      Quantity: 1,
-      IsVatFree: "true",
-    });
-
-    productPrice -= commissionPriceNIS;
+  if (visaPrice) {
+    console.log("Adding split vat invoice");
+    const servicePrice = productPrice - visaPrice;
+    invoiceLines.push(createIssuanceCostInvoiceLine(servicePrice));
+    invoiceLines.push(createServiceInvoiceLine(visaPrice));
+  } else {
+    console.log("Adding total cost invoice");
+    invoiceLines.push(createTotalCostInvoiceLine(productPrice));
   }
-
-  invoiceLines.push({
-    Description: "עלות הנפקה",
-    Price: productPrice.toFixed(2),
-    Quantity: 1,
-    IsVatFree: "false",
-  });
 
   return {
     terminalnumber: data["terminalnumber"],

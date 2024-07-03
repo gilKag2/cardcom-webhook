@@ -4,7 +4,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import fs from "fs";
 import { createNewInvoiceData } from "./invoice.js";
-import { loadCommissionRates } from "./commissionRates.js";
+import { loadVisasRates } from "./visaRatesLoader.js";
 import { buildQueryString, parseResponseData } from "./utils.js";
 
 dotenv.config();
@@ -18,7 +18,7 @@ app.use(bodyParser.json({}));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Initial load of commission rates
-loadCommissionRates();
+loadVisasRates();
 
 app.post("/", async (req, res) => {
   if (req.body.responsecode != 0) {
