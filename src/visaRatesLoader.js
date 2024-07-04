@@ -1,10 +1,19 @@
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Convert the module URL to a file path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Adjust the path to point to the JSON file outside the 'src' folder
+const VISA_RATES_FILE = path.join(__dirname, "..", "visa-rates.json");
 
 let visaPriceMap = new Map();
 
 export const loadVisasRates = () => {
   try {
-    const rawData = fs.readFileSync("visa-rates.json");
+    const rawData = fs.readFileSync(VISA_RATES_FILE);
     const visasRates = JSON.parse(rawData);
     visaPriceMap = new Map(Object.entries(visasRates));
     console.log("visas rates loaded successfully.");
