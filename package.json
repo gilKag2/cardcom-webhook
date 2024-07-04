@@ -1,8 +1,7 @@
 {
   "name": "cardcom-webhook",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Webhook for CardCom services",
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
