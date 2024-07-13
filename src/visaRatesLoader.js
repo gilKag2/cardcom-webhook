@@ -1,14 +1,27 @@
-import fs from "fs";
-import path from "path";
-
-const VISA_RATES_FILE = path.resolve("config/visaRates.json");
+import dotenv from "dotenv";
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+dotenv.config();
 
 let visaPriceMap = new Map();
 
-export const loadVisasRates = () => {
+export const loadVisasRates = async () => {
+  const s3Client = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+  });
+
   try {
-    const rawData = fs.readFileSync(VISA_RATES_FILE);
-    const visasRates = JSON.parse(rawData);
+    // Read the object.
+    const { Body } = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: "visaRates.json",
+      })
+    );
+    const visasRates = JSON.parse(await Body.transformToString());
     visaPriceMap = new Map(Object.entries(visasRates));
     console.log("visas rates loaded successfully.");
   } catch (error) {
@@ -16,8 +29,8 @@ export const loadVisasRates = () => {
     // Handle failure to load commission rates
     visaPriceMap = new Map(
       Object.entries({
-        1: 24,
-        2: 24,
+        1: 20,
+        2: 20,
         11: 100,
         12: 160,
         13: 310,
