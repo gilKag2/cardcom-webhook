@@ -1,7 +1,9 @@
+import { buildQueryString, parseResponseData } from "./utils.js";
+import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
-import { getVisaIssuancePrice } from "./visaRatesLoader.js";
+const API_URL = process.env.CARDCOM_SERVICE_API_URL;
 
 const createServiceInvoiceLine = (visaPrice, productId) => ({
   Description: "שירות",
@@ -27,7 +29,7 @@ const createTotalCostInvoiceLine = (productPrice, productId) => ({
   IsVatFree: "false",
 });
 
-export const createNewInvoiceData = async (data) => {
+const createNewInvoiceData = (data, visaRates) => {
   const productId = data["ProductID"];
 
   if (!productId || !data["ProdPrice"]) {
@@ -39,7 +41,7 @@ export const createNewInvoiceData = async (data) => {
 
   const invoiceLines = [];
 
-  const visaPrice = getVisaIssuancePrice(productId);
+  const visaPrice = visaRates[productId];
 
   if (visaPrice) {
     console.log("Adding split vat invoice");
@@ -50,6 +52,8 @@ export const createNewInvoiceData = async (data) => {
     console.log("Adding total cost invoice");
     invoiceLines.push(createTotalCostInvoiceLine(productPrice, productId));
   }
+
+  console.log("teminal: ", data["terminalnumber"]);
 
   return {
     terminalnumber: data["terminalnumber"],
@@ -72,4 +76,26 @@ export const createNewInvoiceData = async (data) => {
     InvoiceLines: invoiceLines,
     "CreditDealNum.DealNumber": data["internaldealnumber"],
   };
+};
+
+export const createInvoice = async (data, visaRates) => {
+  const invoiceData = createNewInvoiceData(data, visaRates);
+  console.log("invoiceData");
+  console.log(invoiceData);
+  const queryString = buildQueryString(invoiceData);
+  const url = `${API_URL}?${queryString}`;
+  try {
+    const result = await axios.post(url);
+    const parsedData = parseResponseData(result.data);
+    console.log(parsedData);
+    if (parsedData["ResponseCode"] == 0) {
+      // success
+      return;
+    }
+
+    return { errorCode: parsedData["ResponseCode"], message: parsedData["Description"] };
+  } catch (err) {
+    console.log(err);
+    throw new Error("Failed to contact card com services");
+  }
 };
