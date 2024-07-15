@@ -4,9 +4,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const API_URL = process.env.CARDCOM_SERVICE_API_URL;
+const USERNAME = process.env.USERNAME;
 
 const createServiceInvoiceLine = (visaPrice, productId) => ({
-  Description: "שירות",
+  Description: "עלות תפעול",
   Price: visaPrice.toFixed(2),
   ProductID: productId,
   Quantity: 1,
@@ -14,7 +15,7 @@ const createServiceInvoiceLine = (visaPrice, productId) => ({
 });
 
 const createIssuanceCostInvoiceLine = (issuancePrice, productId) => ({
-  Description: "עלות הנפקה",
+  Description: "עלות מערכת",
   Price: issuancePrice.toFixed(2),
   ProductID: productId,
   Quantity: 1,
@@ -22,7 +23,7 @@ const createIssuanceCostInvoiceLine = (issuancePrice, productId) => ({
 });
 
 const createTotalCostInvoiceLine = (productPrice, productId) => ({
-  Description: "מחיר כולל שירות",
+  Description: "עלות מערכת ותפעול",
   Price: productPrice.toFixed(2),
   ProductID: productId,
   Quantity: 1,
@@ -46,18 +47,16 @@ const createNewInvoiceData = (data, visaRates) => {
   if (visaPrice) {
     console.log("Adding split vat invoice");
     const servicePrice = productPrice - visaPrice;
-    invoiceLines.push(createIssuanceCostInvoiceLine(servicePrice, productId));
-    invoiceLines.push(createServiceInvoiceLine(visaPrice, productId));
+    invoiceLines.push(createIssuanceCostInvoiceLine(visaPrice, productId));
+    invoiceLines.push(createServiceInvoiceLine(servicePrice, productId));
   } else {
     console.log("Adding total cost invoice");
     invoiceLines.push(createTotalCostInvoiceLine(productPrice, productId));
   }
 
-  console.log("teminal: ", data["terminalnumber"]);
-
   return {
     terminalnumber: data["terminalnumber"],
-    UserName: "kzFKfohEvL6AOF8aMEJz",
+    UserName: USERNAME,
     InvoiceType: "1",
     InvoiceHead: {
       CustName: data["CardOwnerName"] || "",
@@ -80,8 +79,7 @@ const createNewInvoiceData = (data, visaRates) => {
 
 export const createInvoice = async (data, visaRates) => {
   const invoiceData = createNewInvoiceData(data, visaRates);
-  console.log("invoiceData");
-  console.log(invoiceData);
+  console.log("invoice data: ", invoiceData);
   const queryString = buildQueryString(invoiceData);
   const url = `${API_URL}?${queryString}`;
   try {

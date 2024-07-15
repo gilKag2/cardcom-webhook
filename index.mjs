@@ -14,12 +14,11 @@ const loadVisasRates = async () => {
     })
   );
   const visasRates = JSON.parse(await Body.transformToString());
+  console.log("visasRates: ", visasRates);
   return visasRates;
 };
 
 export const handler = async (event) => {
-  console.log("Received event:", JSON.stringify(event, null, 2)); // Log the entire event
-
   // Parsing the URL-encoded body
   let body;
   try {
@@ -34,7 +33,6 @@ export const handler = async (event) => {
 
   try {
     const visaRates = await loadVisasRates();
-    console.log(visaRates);
     const errorData = await createInvoice(body, visaRates);
     if (!errorData) {
       return {
