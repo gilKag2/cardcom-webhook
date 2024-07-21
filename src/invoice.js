@@ -38,11 +38,13 @@ const createNewInvoiceData = (data, visaRates) => {
   }
   console.log(`Processing data for item ${productId}`);
 
-  let productPrice = +data["ProdPrice"];
+  const quantity = data["ProdQuantity"];
+
+  let productPrice = +data["ProdPrice"] * quantity;
 
   const invoiceLines = [];
 
-  const visaPrice = visaRates[productId];
+  const visaPrice = visaRates[productId] * quantity;
 
   if (visaPrice) {
     console.log("Adding split vat invoice");

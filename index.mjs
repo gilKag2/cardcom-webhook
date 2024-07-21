@@ -23,6 +23,7 @@ export const handler = async (event) => {
   let body;
   try {
     body = querystring.parse(event["body-json"]);
+    console.log("recieved body: ", body);
   } catch (err) {
     console.error("Error parsing body:", err.message);
     return {
